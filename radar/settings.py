@@ -1,5 +1,6 @@
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-import os
+import os, sys
+from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
@@ -15,8 +16,11 @@ AUTH_USER_MODEL = "accounts.RadarUser"
 
 APP_NAME = "Radar"
 
-with open(os.path.join(BASE_DIR, "radar", "secret_key")) as f:
-    SECRET_KEY = f.read().strip()
+try:
+    with open(os.path.join(BASE_DIR, "radar", "secret_key")) as f:
+        SECRET_KEY = f.read().strip()
+except:
+    SECRET_KEY = None
 
 # Application definition
 
@@ -117,19 +121,33 @@ PROVIDERS = {
         "full_reload": "provider.aplus.reload",
         # Deletes matches, then compares all existing submissions
         "recompare": "provider.aplus.recompare",
+        # Recompare all unmatched
+        "recompare_unmatched": "provider.aplus.recompare_all_unmatched",
         # Retrieves the contents of a submission from the provider API
         "get_submission_text": "data.aplus.get_submission_text",
         # Queues a read to the provider API that fetches all exercises in a course
         "async_api_read": "provider.aplus.async_api_read",
+        # Retrieves exercise template from the provider API
+        "get_exercise_template": "provider.aplus.load_exercise_template",
         # Override these in local settings
         "host": "http://localhost:8000",
         "token": "asd123",
     },
-    # Obsolete and not implemented
     "filesystem": {
+        # Ignored, submissions must be created from CLI
         "hook": "provider.filesystem.hook",
-        "cron": "provider.filesystem.cron",
+        # Deletes all submissions and matches, cannot reload anything
+        "full_reload": "provider.filesystem.reload",
+        # Deletes matches, then compares all existing submissions
+        "recompare": "provider.filesystem.recompare",
+        # Ignored, submissions must be matched from CLI
+        "recompare_unmatched": "provider.filesystem.recompare_all_unmatched",
+        # Retrieves the contents of a submission from filesystem
         "get_submission_text": "data.files.get_submission_text",
+        # Ignored, exercises must be created from CLI
+        "async_api_read": "provider.filesystem.async_api_read",
+        # Ignored, exertcise template must be inserted from web UI
+        "get_exercise_template": "provider.filesystem.load_exercise_template",
     },
 }
 
@@ -319,3 +337,9 @@ CELERY_RESULT_BACKEND = "cache+memcached://127.0.0.1:11211/"
 from r_django_essentials.conf import update_settings_from_module
 
 update_settings_from_module(__name__, "local_settings")
+
+if SECRET_KEY is None:
+    if DEBUG:
+        SECRET_KEY = 'secretindeed'
+    else:
+        raise ImproperlyConfigured('A secret_key file must be created to run when DEBUG=False')
