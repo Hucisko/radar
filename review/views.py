@@ -9,6 +9,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.template import loader as template_loader
 from celery.result import AsyncResult
 
+from django.db.models import Avg, Max
+
 from data.models import Course, Comparison, Exercise
 from data import graph
 from radar.config import provider_config, configured_function
@@ -351,3 +353,75 @@ def exercise_settings(request, course_key=None, exercise_key=None, course=None, 
         "name": ''
     })
     return render(request, "review/exercise_settings.html", context)
+
+
+@access_resource
+def students_view(request, course=None, course_key=None):
+    # comparisons for a course (excluding template comparisons)
+    comparisons = Comparison.objects\
+        .filter(submission_a__exercise__course=course)\
+        .filter(similarity__gt=0)\
+        .exclude(submission_b__isnull=True)
+
+    students = course.students.all()
+    courseAverage = comparisons.aggregate(Avg("similarity"))
+
+    # For average similarity scores
+    averages = {}
+    # For highest similarity scores
+    highest = {}
+    highestWith = {}
+
+    # create average scores for all students on a course
+    for student in students:
+            """ 
+                comparisons where student is submission a (for simplicity).
+                Here might be reasonable to consider taking the max similarity
+                on an exercise between a pair of students (where student is either a
+                or b and pick the highest similarity 
+            """
+            similarities = (
+                comparisons.filter(submission_a__student=student).order_by("-similarity")
+            )
+            # store averages 
+            averages[student] = similarities.aggregate(Avg("similarity"))
+            # store highest similarity score
+            highest[student] = similarities.aggregate(Max("similarity"))
+            # store student with whom the highest score is from
+            highestWith[student] = similarities.first()
+
+
+    context = {
+        "hierarchy": (
+            (settings.APP_NAME, reverse("index")),
+            (course.name, reverse("course", kwargs={ "course_key": course.key })),
+            ("Students", None)
+        ),
+        "course": course,
+        "students": students,
+        "exercises": course.exercises.all(),
+        "comparisons": comparisons,
+        "averages": averages,
+        "highest": highest,
+        "courseAverage": courseAverage,
+        "highestWith": highestWith,
+    }
+    return render(request, "review/students_view.html", context)
+
+@access_resource
+def student_view(request, course=None, course_key=None, student=None, student_key=None):
+    context = {
+        "hierarchy": (
+            (settings.APP_NAME, reverse("index")),
+            (course.name, reverse("course", kwargs={ "course_key": course.key })),
+            ("Students", reverse("students_view", kwargs={ "course_key": course.key})),
+            (student_key, None)
+        ),
+        "course": course,
+        "students": course.students.all(),
+        "exercises": course.exercises.all(),
+        "student" : student_key,
+        "exercise" : exercise,
+    }
+
+    return render(request, "review/student_view.html", context)

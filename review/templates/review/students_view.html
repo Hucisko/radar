@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block css %}
+{% load static %}
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+<link rel="stylesheet" href="//cdn.datatables.net/1.10.24/css/jquery.dataTables.min.css" />
+{% endblock %}
+{% load review %}
+{% block content %}
+
+{% if courseAverage.value %}
+    <p>
+        Average similarity on the course: {{ courseAverage.similarity__avg|percent }}
+    </p>
+{% else %}
+    <p> No submission data </p>
+{% endif %}
+
+<div>
+    <table class="table" id="studentdatatable">
+        <thead>
+            <tr>
+                <th>Student</th>
+                <th>Average similarity score</th>
+                <th>Highest similarity score</th>
+                <th>Highest similarity with</th>
+            </tr>
+        </thead>
+        <tbody>
+                {% for student in students %}
+                <tr>
+                    <td><a href="{% url 'student_view' course_key=course.key student_key=student.key %}">{{ student.key }}</a></td>
+                    <td>{{ averages|get_avg:student|percent }}</td>
+                    <td>{{ highest|get_max:student|percent }}</td>
+                    <td>{{ highestWith|get_highestWith:student }}</td>
+                </tr>
+                {% endfor %}
+        <tfoot>
+            <tr>
+                <th>Student</th>
+                <th>Average similarity score</th>
+                <th>Highest similarity score</th>
+                <th>Highest similarity with</th>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
+<script src=//cdn.datatables.net/1.10.24/js/jquery.dataTables.min.js></script>
+<script>
+    $(document).ready( function () {
+        $('#studentdatatable').DataTable();
+    } );
+</script>
+{% endblock %}

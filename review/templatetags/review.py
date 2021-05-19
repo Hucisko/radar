@@ -8,6 +8,38 @@ register = template.Library()
 def percent(value):
     return "{:d}%".format(round(100 * value))
 
+@register.filter
+def get_item(dictionary, key):
+    return dictionary.get(key)
+
+"""
+This is terrible, but for demoing purposes is here for now...
+"""
+@register.filter
+def get_highestWith(dictionary, key):
+    value = dictionary.get(key)
+    if value != None:
+        valuestr = str(value)
+        return valuestr.split(" ")[3]
+    else:
+        return "N/A"
+
+@register.filter
+def get_avg(dictionary, key):
+    value = dictionary.get(key).get("similarity__avg")
+    if value == None:
+        return 0
+    else:
+        return value
+
+@register.filter
+def get_max(dictionary, key):
+    value = dictionary.get(key).get("similarity__max")
+    if value == None:
+        return 0
+    else:
+        return value
+
 
 @register.inclusion_tag("review/_student.html")
 def student_td(course, comparison, b=False):
