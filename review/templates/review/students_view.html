@@ -21,6 +21,7 @@
             <tr>
                 <th>Student</th>
                 <th>Average similarity score</th>
+                <th>Weighted average similarity score</th>
                 <th>Highest similarity score</th>
                 <th>Highest similarity with</th>
             </tr>
@@ -30,6 +31,7 @@
                 <tr>
                     <td><a href="{% url 'student_view' course_key=course.key student_key=student.key %}">{{ student.key }}</a></td>
                     <td>{{ averages|get_avg:student|percent }}</td>
+                    <td>{{ averagesWeighted|get_item:student|percent }}</td>
                     <td>{{ highest|get_max:student|percent }}</td>
                     <td>{{ highestWith|get_highestWith:student }}</td>
                 </tr>
@@ -38,6 +40,7 @@
             <tr>
                 <th>Student</th>
                 <th>Average similarity score</th>
+                <th>Weighted average similarity score</th>
                 <th>Highest similarity score</th>
                 <th>Highest similarity with</th>
             </tr>

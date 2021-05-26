@@ -357,6 +357,12 @@ def exercise_settings(request, course_key=None, exercise_key=None, course=None, 
 
 @access_resource
 def students_view(request, course=None, course_key=None):
+
+
+    """
+    Multiply similarity with token count and in the loop count token counts over all exercises
+    for a student -> divide these to get weighted average
+    """
     # comparisons for a course (excluding template comparisons)
     comparisons = Comparison.objects\
         .filter(submission_a__exercise__course=course)\
@@ -368,6 +374,7 @@ def students_view(request, course=None, course_key=None):
 
     # For average similarity scores
     averages = {}
+    averagesWeighted = {}
     # For highest similarity scores
     highest = {}
     highestWith = {}
@@ -383,6 +390,21 @@ def students_view(request, course=None, course_key=None):
             similarities = (
                 comparisons.filter(submission_a__student=student).order_by("-similarity")
             )
+            tokenWeights = 0
+            tokensTotalLength = 0
+            
+            # This is slow but works
+            for s in similarities:
+                authored_token_count = s.submission_a.as_dict()["authored_token_count"]
+                tokenWeights += authored_token_count*s.similarity
+                tokensTotalLength += authored_token_count
+           
+
+            # store weighted averages
+            if tokensTotalLength > 0:
+                averagesWeighted[student] = tokenWeights / tokensTotalLength
+            else:
+                averagesWeighted[student] = 0
             # store averages 
             averages[student] = similarities.aggregate(Avg("similarity"))
             # store highest similarity score
@@ -405,6 +427,7 @@ def students_view(request, course=None, course_key=None):
         "highest": highest,
         "courseAverage": courseAverage,
         "highestWith": highestWith,
+        "averagesWeighted": averagesWeighted,
     }
     return render(request, "review/students_view.html", context)
 
